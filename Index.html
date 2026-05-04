@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garuda AI Core</title>
+    <style>
+        body { background: #000; color: #00f2ff; font-family: sans-serif; margin: 0; text-align: center; }
+        .header { padding: 15px; border-bottom: 2px solid #00f2ff; background: #050505; }
+        .orb { width: 90px; height: 90px; border: 3px solid #00f2ff; border-radius: 50%; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .btn-mic { background: #00f2ff; color: #000; border: none; padding: 18px 40px; border-radius: 50px; font-weight: bold; font-size: 18px; margin: 10px; }
+        #res-box { width: 90%; background: #0a1a1a; border: 1px solid #00f2ff; padding: 15px; margin: 15px auto; border-radius: 10px; min-height: 60px; color: #fff; text-align: left; }
+        #chart { width: 95%; height: 350px; margin: 10px auto; border: 1px solid #333; border-radius: 12px; overflow: hidden; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="margin:0;">🦅 GARUDA AI CORE</h2>
+    </div>
+
+    <div class="orb" id="orb">READY</div>
+
+    <button class="btn-mic" onclick="startGaruda()">SAY COMMAND</button>
+
+    <div id="res-box">
+        <div id="msg">> System Standing By...</div>
+    </div>
+
+    <div id="chart">
+        <div id="tv_chart"></div>
+    </div>
+
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        new TradingView.widget({ "autosize": true, "symbol": "BINANCE:BTCUSDT", "interval": "15", "theme": "dark", "style": "1", "container_id": "tv_chart" });
+
+        const KEY = "AIzaSyC2VZdRxnf2aO2HAhhRjQ4-qCHoPJyshi4";
+
+        async function startGaruda() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const rec = new SpeechRecognition();
+            rec.lang = 'hi-IN';
+
+            rec.onstart = () => { 
+                document.getElementById('orb').innerText = "LISTENING";
+                document.getElementById('msg').innerText = "> Listening...";
+            };
+
+            rec.onresult = async (e) => {
+                const userMsg = e.results[0][0].transcript;
+                document.getElementById('msg').innerText = "> Neeraj: " + userMsg;
+                document.getElementById('orb').innerText = "THINKING";
+
+                try {
+                    // Method badal diya hai taki block na ho
+                    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + KEY;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: "Short hindi reply: " + userMsg }] }] })
+                    });
+                    
+                    const d = await response.json();
+                    
+                    // Agar error hai toh yahan dikhayega
+                    if(d.error) {
+                        document.getElementById('msg').innerText = "> API Error: " + d.error.message;
+                        document.getElementById('orb').innerText = "FAIL";
+                        return;
+                    }
+
+                    const reply = d.candidates[0].content.parts[0].text;
+                    document.getElementById('msg').innerText = "> Garuda: " + reply;
+                    document.getElementById('orb').innerText = "ACTIVE";
+                    
+                    const ut = new SpeechSynthesisUtterance(reply);
+                    ut.lang = 'hi-IN';
+                    window.speechSynthesis.speak(ut);
+                    
+                } catch (err) {
+                    document.getElementById('msg').innerText = "> Connection Blocked. Incognito try karo.";
+                    document.getElementById('orb').innerText = "RETRY";
+                }
+            };
+            rec.start();
+        }
+    </script>
+</body>
+</html>
